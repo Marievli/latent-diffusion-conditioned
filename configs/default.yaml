@@ -1,0 +1,66 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Default training configuration
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+data:
+  manifest_path: "data/train.csv"
+  val_manifest_path: "data/val.csv"
+  image_root: "data/images"
+  image_size: 256           # square resolution; latents will be 32×32
+  augment: true
+  num_workers: 8
+  pin_memory: true
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model:
+  # U-Net
+  in_channels: 4
+  model_channels: 128
+  channel_mults: [1, 2, 4, 4]
+  num_res_blocks: 2
+  attn_resolutions: [16, 8]
+  dropout: 0.1
+  heads: 8
+
+  # Noise schedule
+  num_timesteps: 1000
+  beta_start: 1.0e-4
+  beta_end: 2.0e-2
+  schedule: "cosine"        # "linear" | "cosine"
+
+  # Pretrained backbones (HuggingFace identifiers)
+  vae_model: "stabilityai/sd-vae-ft-mse"
+  clip_model: "openai/clip-vit-large-patch14"
+  context_dim: 768           # CLIP ViT-L hidden dim
+
+# ── Training ──────────────────────────────────────────────────────────────────
+training:
+  batch_size: 16
+  grad_accum_steps: 4        # effective batch = 64
+  num_epochs: 100
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-2
+  max_grad_norm: 1.0
+  ema_decay: 0.9999
+  mixed_precision: true      # bf16 on Ampere+; fp16 otherwise
+  p_uncond: 0.1              # classifier-free guidance dropout probability
+
+# ── Sampling ──────────────────────────────────────────────────────────────────
+sampling:
+  guidance_scale: 7.5
+  val_inference_steps: 50
+  sample_prompts:
+    - "a photorealistic mountain landscape at golden hour"
+    - "an abstract oil painting of a stormy sea"
+    - "a close-up of a red rose covered in dew drops"
+
+# ── Logging & checkpointing ───────────────────────────────────────────────────
+logging:
+  output_dir: "outputs"
+  log_every: 100             # steps
+  save_every: 2000           # steps
+  sample_every: 1000         # steps
+  use_wandb: true
+  wandb_project: "latent-diffusion-conditioned"
+  wandb_run_name: null       # auto-generated if null
